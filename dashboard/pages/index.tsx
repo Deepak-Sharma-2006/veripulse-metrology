@@ -315,7 +315,7 @@ export default function OperatorConsole() {
   }, [runSimulationStep]);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-sky-500 selection:text-white">
+    <div className="h-screen max-h-screen overflow-hidden bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-sky-500 selection:text-white">
       <Head>
         <title>VeriPulse Dynamics | Autonomous Roll-to-Roll Metrology Console</title>
         <meta
@@ -328,7 +328,7 @@ export default function OperatorConsole() {
       {/* ------------------------------------------------------------- */}
       {/* 1. Sleek Industrial Enterprise Top Header                     */}
       {/* ------------------------------------------------------------- */}
-      <header className="px-4 py-2.5 bg-slate-900 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-50 shadow-md">
+      <header className="h-12 px-4 py-1.5 bg-slate-900 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 shrink-0 z-50 shadow-md">
         {/* Brand & Line Identification */}
         <div className="flex items-center space-x-3">
           <div className="flex items-center space-x-2">
@@ -436,25 +436,25 @@ export default function OperatorConsole() {
       {/* ------------------------------------------------------------- */}
       {/* 2. Main High-Density Industrial Dashboard Grid                */}
       {/* ------------------------------------------------------------- */}
-      <main className="flex-1 p-3 grid grid-cols-1 lg:grid-cols-12 gap-3 max-w-[1920px] mx-auto w-full">
+      <main className="flex-1 min-h-0 p-2.5 grid grid-cols-1 lg:grid-cols-12 gap-2.5 max-w-[1920px] mx-auto w-full overflow-hidden">
         {/* Left Column: Edge Perception & Optical Inspection (5 Cols) */}
-        <div className="lg:col-span-5 flex flex-col space-y-3">
-          <div className="h-[390px]">
+        <div className="lg:col-span-5 flex flex-col h-full min-h-0 gap-2.5 overflow-hidden">
+          <div className="h-[55%] min-h-0">
             <VideoInspectionFeed
               telemetryRef={telemetryRef}
               alertRef={alertRef}
               fps={120.0}
             />
           </div>
-          <div className="flex-1 min-h-[260px]">
+          <div className="h-[45%] min-h-0">
             <FFTSpectrumView spectrumData={spectrumData} />
           </div>
         </div>
 
         {/* Middle Column: 3D Digital Twin & Modbus Gauges (4 Cols) */}
-        <div className="lg:col-span-4 flex flex-col space-y-3">
-          <div className="h-[390px] bg-slate-900 border border-slate-800 rounded-lg overflow-hidden shadow-lg flex flex-col">
-            <div className="flex items-center justify-between px-3.5 py-2.5 bg-slate-950/80 border-b border-slate-800">
+        <div className="lg:col-span-4 flex flex-col h-full min-h-0 gap-2.5 overflow-hidden">
+          <div className="h-[60%] min-h-0 bg-slate-900 border border-slate-800 rounded-lg overflow-hidden shadow-lg flex flex-col">
+            <div className="flex items-center justify-between px-3.5 py-2 bg-slate-950/80 border-b border-slate-800 shrink-0">
               <div className="flex items-center space-x-2">
                 <Layers className="w-4 h-4 text-sky-400" />
                 <span className="text-xs font-semibold text-slate-100">
@@ -468,7 +468,7 @@ export default function OperatorConsole() {
                 Drag to Orbit • Scroll to Zoom
               </span>
             </div>
-            <div className="flex-1 relative bg-slate-950">
+            <div className="flex-1 min-h-0 relative bg-slate-950">
               <DigitalTwinCanvas
                 telemetry={telemetry}
                 isRibbingActive={isRibbingActive || activeScenario === "ribbing"}
@@ -476,7 +476,7 @@ export default function OperatorConsole() {
             </div>
           </div>
 
-          <div className="flex-1 min-h-[260px]">
+          <div className="h-[40%] min-h-0 flex flex-col">
             <PLCTelemetryGauges
               telemetry={telemetry}
               defectCount={agentEvents.length}
@@ -486,7 +486,7 @@ export default function OperatorConsole() {
         </div>
 
         {/* Right Column: Autonomous Supervisory Controller (3 Cols) */}
-        <div className="lg:col-span-3 flex flex-col h-full min-h-[660px]">
+        <div className="lg:col-span-3 flex flex-col h-full min-h-0 overflow-hidden">
           <AgenticChatConsole
             agentEvents={agentEvents}
             plcUpdates={plcUpdates}
@@ -501,7 +501,7 @@ export default function OperatorConsole() {
       {/* ------------------------------------------------------------- */}
       {/* 3. Executive Telemetry Status Bar                             */}
       {/* ------------------------------------------------------------- */}
-      <footer className="px-4 py-2 bg-slate-950 border-t border-slate-800 flex flex-wrap items-center justify-between text-[11px] font-mono text-slate-400 gap-2">
+      <footer className="h-8 px-4 bg-slate-950 border-t border-slate-800 flex flex-wrap items-center justify-between text-[11px] font-mono text-slate-400 gap-2 shrink-0">
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-1.5">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />

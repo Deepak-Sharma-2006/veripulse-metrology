@@ -44,9 +44,9 @@ export const AgenticChatConsole: React.FC<AgenticChatConsoleProps> = ({
   const [filterMode, setFilterMode] = useState<"all" | "reasoning" | "tools" | "plc">("all");
 
   return (
-    <div className="flex flex-col h-full bg-slate-900 border border-slate-800 rounded-lg overflow-hidden shadow-lg">
+    <div className="flex flex-col h-full min-h-0 bg-slate-900 border border-slate-800 rounded-lg overflow-hidden shadow-lg">
       {/* Precision Industrial Header */}
-      <div className="flex items-center justify-between px-3.5 py-2.5 bg-slate-950/80 border-b border-slate-800 min-w-0">
+      <div className="flex items-center justify-between px-3.5 py-2 bg-slate-950/80 border-b border-slate-800 min-w-0 shrink-0">
         <div className="flex items-center space-x-2.5 min-w-0">
           <Bot className="w-4 h-4 text-emerald-400 shrink-0" />
           <div className="flex items-center space-x-2 truncate">
@@ -68,7 +68,7 @@ export const AgenticChatConsole: React.FC<AgenticChatConsoleProps> = ({
       </div>
 
       {/* Filter and Quick Trigger Ribbon */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 bg-slate-950/50 border-b border-slate-800/80 text-[11px]">
+      <div className="flex flex-wrap items-center justify-between gap-1.5 px-3 py-1.5 bg-slate-950/50 border-b border-slate-800/80 text-[11px] shrink-0">
         {/* Filter Tabs */}
         <div className="flex items-center space-x-1">
           <button
@@ -135,7 +135,7 @@ export const AgenticChatConsole: React.FC<AgenticChatConsoleProps> = ({
       </div>
 
       {/* Main Streaming Feed Area */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-3 font-sans text-xs">
+      <div className="flex-1 min-h-0 overflow-y-auto p-2.5 space-y-2.5 font-sans text-xs">
         {agentEvents.length === 0 && plcUpdates.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-slate-500 space-y-2">
             <Activity className="w-6 h-6 text-slate-600 animate-pulse" />
@@ -215,7 +215,7 @@ export const AgenticChatConsole: React.FC<AgenticChatConsoleProps> = ({
       </div>
 
       {/* Safety & SLA Footer Banner */}
-      <div className="px-3 py-2 bg-slate-950 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+      <div className="px-3 py-1.5 bg-slate-950 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400 shrink-0">
         <div className="flex items-center space-x-2">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
           <span>Causal Safety Slew Gate: <strong className="text-emerald-400">Enforced (≤0.05 m/s²)</strong></span>

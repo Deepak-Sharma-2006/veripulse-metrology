@@ -255,9 +255,9 @@ export const VideoInspectionFeed: React.FC<VideoInspectionFeedProps> = ({
   }, [viewMode, zoomLevel, fps]);
 
   return (
-    <div className="flex flex-col h-full bg-slate-900 border border-slate-800 rounded-lg overflow-hidden shadow-lg">
+    <div className="flex flex-col h-full min-h-0 bg-slate-900 border border-slate-800 rounded-lg overflow-hidden shadow-lg">
       {/* Precision Industrial Header */}
-      <div className="flex items-center justify-between px-3.5 py-2.5 bg-slate-950/80 border-b border-slate-800">
+      <div className="flex items-center justify-between px-3.5 py-2 bg-slate-950/80 border-b border-slate-800 shrink-0">
         <div className="flex items-center space-x-2.5">
           <Camera className="w-4 h-4 text-sky-400" />
           <div className="flex items-center space-x-2">
@@ -313,7 +313,7 @@ export const VideoInspectionFeed: React.FC<VideoInspectionFeedProps> = ({
       </div>
 
       {/* Main Optical Viewport Canvas */}
-      <div className="relative flex-1 bg-slate-950 flex items-center justify-center overflow-hidden">
+      <div className="relative flex-1 min-h-0 bg-slate-950 flex items-center justify-center overflow-hidden">
         <canvas
           ref={canvasRef}
           width={640}

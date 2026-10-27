@@ -27,9 +27,9 @@ export const PLCTelemetryGauges: React.FC<PLCTelemetryGaugesProps> = ({
   const isSpeedAdjusted = Math.abs(speed - 2.50) > 0.04;
 
   return (
-    <div className="flex flex-col bg-slate-900 border border-slate-800 rounded-lg overflow-hidden shadow-lg">
+    <div className="flex flex-col h-full min-h-0 bg-slate-900 border border-slate-800 rounded-lg overflow-hidden shadow-lg">
       {/* Precision Header */}
-      <div className="flex items-center justify-between px-3.5 py-2.5 bg-slate-950/80 border-b border-slate-800">
+      <div className="flex items-center justify-between px-3.5 py-2 bg-slate-950/80 border-b border-slate-800 shrink-0">
         <div className="flex items-center space-x-2.5">
           <Gauge className="w-4 h-4 text-sky-400" />
           <span className="text-xs font-semibold tracking-wide text-slate-100">
@@ -54,16 +54,16 @@ export const PLCTelemetryGauges: React.FC<PLCTelemetryGaugesProps> = ({
       </div>
 
       {/* Grid of Precision Gauges */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 font-mono">
+      <div className="flex-1 min-h-0 grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-2.5 font-mono overflow-hidden">
         {/* Gauge 1: Line Speed */}
-        <div className="flex flex-col justify-between p-3 rounded-lg bg-slate-950/70 border border-slate-800 relative overflow-hidden">
+        <div className="flex flex-col justify-between p-2.5 rounded-lg bg-slate-950/70 border border-slate-800 relative overflow-hidden">
           <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1 font-sans">
             <span className="font-semibold text-slate-300">Line Velocity</span>
             <span className="text-[9px] font-mono text-slate-500">40001</span>
           </div>
 
-          <div className="my-1">
-            <div className="text-2xl font-bold tracking-tight text-slate-100">
+          <div className="my-0.5">
+            <div className="text-xl font-bold tracking-tight text-slate-100">
               {speed.toFixed(2)}{" "}
               <span className="text-xs font-normal text-slate-400">m/s</span>
             </div>
@@ -75,7 +75,7 @@ export const PLCTelemetryGauges: React.FC<PLCTelemetryGaugesProps> = ({
             </div>
           </div>
 
-          <div className="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+          <div className="w-full bg-slate-800 h-1.5 rounded-full mt-1.5 overflow-hidden">
             <div
               className={`h-full transition-all duration-300 ${isSpeedAdjusted ? "bg-amber-400" : "bg-sky-400"}`}
               style={{ width: `${speedPct}%` }}
@@ -84,14 +84,14 @@ export const PLCTelemetryGauges: React.FC<PLCTelemetryGaugesProps> = ({
         </div>
 
         {/* Gauge 2: Web Tension */}
-        <div className="flex flex-col justify-between p-3 rounded-lg bg-slate-950/70 border border-slate-800 relative overflow-hidden">
+        <div className="flex flex-col justify-between p-2.5 rounded-lg bg-slate-950/70 border border-slate-800 relative overflow-hidden">
           <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1 font-sans">
             <span className="font-semibold text-slate-300">Web Tension</span>
             <span className="text-[9px] font-mono text-slate-500">40002</span>
           </div>
 
-          <div className="my-1">
-            <div className="text-2xl font-bold tracking-tight text-slate-100">
+          <div className="my-0.5">
+            <div className="text-xl font-bold tracking-tight text-slate-100">
               {tension.toFixed(1)}{" "}
               <span className="text-xs font-normal text-slate-400">N</span>
             </div>
@@ -100,7 +100,7 @@ export const PLCTelemetryGauges: React.FC<PLCTelemetryGaugesProps> = ({
             </div>
           </div>
 
-          <div className="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+          <div className="w-full bg-slate-800 h-1.5 rounded-full mt-1.5 overflow-hidden">
             <div
               className="bg-sky-400 h-full transition-all duration-300"
               style={{ width: `${tensionPct}%` }}
@@ -109,14 +109,14 @@ export const PLCTelemetryGauges: React.FC<PLCTelemetryGaugesProps> = ({
         </div>
 
         {/* Gauge 3: IR Dryer Temp */}
-        <div className="flex flex-col justify-between p-3 rounded-lg bg-slate-950/70 border border-slate-800 relative overflow-hidden">
+        <div className="flex flex-col justify-between p-2.5 rounded-lg bg-slate-950/70 border border-slate-800 relative overflow-hidden">
           <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1 font-sans">
             <span className="font-semibold text-slate-300">Dryer Zone 1</span>
             <span className="text-[9px] font-mono text-slate-500">40003</span>
           </div>
 
-          <div className="my-1">
-            <div className="text-2xl font-bold tracking-tight text-amber-400">
+          <div className="my-0.5">
+            <div className="text-xl font-bold tracking-tight text-amber-400">
               {temp.toFixed(1)}{" "}
               <span className="text-xs font-normal text-slate-400">°C</span>
             </div>
@@ -125,7 +125,7 @@ export const PLCTelemetryGauges: React.FC<PLCTelemetryGaugesProps> = ({
             </div>
           </div>
 
-          <div className="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+          <div className="w-full bg-slate-800 h-1.5 rounded-full mt-1.5 overflow-hidden">
             <div
               className="bg-amber-500 h-full transition-all duration-300"
               style={{ width: `${tempPct}%` }}
@@ -134,14 +134,14 @@ export const PLCTelemetryGauges: React.FC<PLCTelemetryGaugesProps> = ({
         </div>
 
         {/* Gauge 4: Slurry Pump Speed */}
-        <div className="flex flex-col justify-between p-3 rounded-lg bg-slate-950/70 border border-slate-800 relative overflow-hidden">
+        <div className="flex flex-col justify-between p-2.5 rounded-lg bg-slate-950/70 border border-slate-800 relative overflow-hidden">
           <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1 font-sans">
             <span className="font-semibold text-slate-300">Slurry Pump</span>
             <span className="text-[9px] font-mono text-slate-500">40004</span>
           </div>
 
-          <div className="my-1">
-            <div className="text-2xl font-bold tracking-tight text-slate-100">
+          <div className="my-0.5">
+            <div className="text-xl font-bold tracking-tight text-slate-100">
               {pumpRpm.toFixed(0)}{" "}
               <span className="text-xs font-normal text-slate-400">RPM</span>
             </div>
@@ -150,7 +150,7 @@ export const PLCTelemetryGauges: React.FC<PLCTelemetryGaugesProps> = ({
             </div>
           </div>
 
-          <div className="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+          <div className="w-full bg-slate-800 h-1.5 rounded-full mt-1.5 overflow-hidden">
             <div
               className="bg-sky-400 h-full transition-all duration-300"
               style={{ width: `${pumpPct}%` }}

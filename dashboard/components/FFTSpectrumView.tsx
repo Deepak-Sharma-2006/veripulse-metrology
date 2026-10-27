@@ -111,9 +111,9 @@ export const FFTSpectrumView: React.FC<FFTSpectrumViewProps> = ({ spectrumData }
   }, [spectrumData, bin14Power, bin142Power, isRibbingResonant]);
 
   return (
-    <div className="flex flex-col h-full bg-slate-900 border border-slate-800 rounded-lg overflow-hidden shadow-lg">
+    <div className="flex flex-col h-full min-h-0 bg-slate-900 border border-slate-800 rounded-lg overflow-hidden shadow-lg">
       {/* Precision Header */}
-      <div className="flex items-center justify-between px-3.5 py-2.5 bg-slate-950/80 border-b border-slate-800">
+      <div className="flex items-center justify-between px-3 py-2 bg-slate-950/80 border-b border-slate-800 shrink-0">
         <div className="flex items-center space-x-2.5">
           <Activity className="w-4 h-4 text-sky-400" />
           <span className="text-xs font-semibold tracking-wide text-slate-100">
@@ -140,7 +140,7 @@ export const FFTSpectrumView: React.FC<FFTSpectrumViewProps> = ({ spectrumData }
       </div>
 
       {/* Main Canvas Area */}
-      <div className="relative flex-1 bg-slate-950 p-2 flex items-center justify-center overflow-hidden">
+      <div className="relative flex-1 min-h-0 bg-slate-950 p-1.5 flex items-center justify-center overflow-hidden">
         <canvas
           ref={canvasRef}
           width={560}
@@ -150,7 +150,7 @@ export const FFTSpectrumView: React.FC<FFTSpectrumViewProps> = ({ spectrumData }
       </div>
 
       {/* Harmonic Spectral Breakdown Footer */}
-      <div className="grid grid-cols-3 gap-2 px-3.5 py-2 bg-slate-950 border-t border-slate-800 text-[11px] font-mono">
+      <div className="grid grid-cols-3 gap-2 px-3 py-1.5 bg-slate-950 border-t border-slate-800 text-[10px] font-mono shrink-0">
         <div className="flex flex-col">
           <span className="text-[10px] text-slate-500 font-sans font-medium">14.25 Hz Mechanical Runout</span>
           <span className="text-purple-400 font-semibold font-mono">{(bin14Power * 100).toFixed(1)}% Amp</span>
