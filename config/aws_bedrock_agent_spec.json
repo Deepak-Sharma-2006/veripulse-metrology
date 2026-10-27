@@ -1,0 +1,113 @@
+{
+  "agent_name": "VeriPulse-Metrology-Healer",
+  "version": "2.0.0",
+  "model_id": "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+  "inference_configuration": {
+    "temperature": 0.0,
+    "max_tokens": 512,
+    "top_p": 1.0
+  },
+  "system_prompt": "You are the VeriPulse Autonomous Metrologist and Cyber-Physical Healer for ultra-high-speed roll-to-roll lithium-ion battery electrode manufacturing. You operate under a strict single-turn latency budget (settling time <= 3.5 seconds). You receive multi-spectral micro-crop images, AWS Graviton3 COOL metrological verification metrics (KleidiCV), and pre-hydrated SCADA telemetry. Your job is to diagnose the root cause with zero fluff and immediately invoke the correct single-turn remediation tool:\n1. If the anomaly is caused by substrate foil specular reflections or glare (high morphological solidity >= 0.85, low Gabor energy <= 0.20, high saturation), invoke 'recalibrate_gapi_vision_pipeline' to dynamically tune bilateral filters and Scharr thresholds without G-API graph recompilation.\n2. If the anomaly is a true physical defect such as 142.5 Hz meniscus ribbing or tension flutter, invoke 'execute_plc_recalibration' with precise corrective engineering setpoints (e.g. shift speed from 2.50 to 2.38 m/s, increase dancer gain to 6.50) to break mechanical resonance and suppress flutter.\n3. Only invoke 'query_scada_historian' if deep multi-hour drift diagnostics are strictly necessary.",
+  "tools": [
+    {
+      "toolSpec": {
+        "name": "recalibrate_gapi_vision_pipeline",
+        "description": "Dynamically updates edge OpenCV 5 G-API parameters to eradicate false rejects caused by substrate glare or reflectivity changes without graph recompilation.",
+        "inputSchema": {
+          "json": {
+            "type": "object",
+            "properties": {
+              "line_id": { "type": "string", "description": "Production line identifier", "example": "line_04_lithium_anode" },
+              "target_node_id": { "type": "string", "description": "G-API graph node ID", "example": "fused_subpixel_edge_01" },
+              "calibration_adjustments": {
+                "type": "object",
+                "properties": {
+                  "bilateral_spatial_sigma": { "type": "number", "description": "Spatial sigma for edge-preserving bilateral filter", "example": 2.2 },
+                  "bilateral_range_sigma": { "type": "number", "description": "Color range sigma", "example": 0.12 },
+                  "scharr_gradient_threshold": { "type": "number", "description": "Gradient magnitude threshold for edge segmentation", "example": 55.0 },
+                  "specular_glare_threshold": { "type": "number", "description": "Threshold for specular rejection mask", "example": 210.0 }
+                },
+                "required": ["bilateral_spatial_sigma", "bilateral_range_sigma", "scharr_gradient_threshold"]
+              },
+              "agent_visual_rationale": { "type": "string", "description": "Visual diagnostic reasoning derived from evaluating the composite micro-crop ROI and COOL analysis" }
+            },
+            "required": ["line_id", "target_node_id", "calibration_adjustments", "agent_visual_rationale"]
+          }
+        }
+      }
+    },
+    {
+      "toolSpec": {
+        "name": "execute_plc_recalibration",
+        "description": "Dispatches corrective engineering setpoints to the plant PLC. Parameter scaling to fixed-point Modbus INT16 registers is performed deterministically by plc_commander.py.",
+        "inputSchema": {
+          "json": {
+            "type": "object",
+            "properties": {
+              "line_id": { "type": "string", "description": "Production line identifier", "example": "line_04_lithium_anode" },
+              "target_plc_ip": { "type": "string", "description": "Plant PLC Modbus TCP IP address", "example": "127.0.0.1" },
+              "engineering_setpoints": {
+                "type": "object",
+                "properties": {
+                  "line_velocity_mps": { "type": "number", "description": "Target web speed in m/s (e.g., 2.38 m/s to shift out of 142.5 Hz resonance)", "example": 2.38 },
+                  "web_tension_newtons": { "type": "number", "description": "Web tension in Newtons", "example": 145.0 },
+                  "ir_dryer_temp_celsius": { "type": "number", "description": "IR dryer temperature in Celsius", "example": 118.5 },
+                  "slurry_pump_rpm": { "type": "number", "description": "Slurry metering pump speed in RPM", "example": 1180.0 },
+                  "dancer_damping_gain": { "type": "number", "description": "Dancer roll active hydraulic damping gain", "example": 6.50 }
+                },
+                "required": ["line_velocity_mps", "dancer_damping_gain"]
+              },
+              "causal_diagnostic_rationale": { "type": "string", "description": "Detailed physics reasoning explaining how the adjustments eliminate the root cause" }
+            },
+            "required": ["line_id", "target_plc_ip", "engineering_setpoints", "causal_diagnostic_rationale"]
+          }
+        }
+      }
+    },
+    {
+      "toolSpec": {
+        "name": "query_scada_historian",
+        "description": "Queries historical SCADA trend logs and SQLite WAL database across multi-minute or multi-hour lookback windows for long-term thermal or mechanical drift analysis.",
+        "inputSchema": {
+          "json": {
+            "type": "object",
+            "properties": {
+              "window_sec": { "type": "integer", "description": "Lookback window in seconds (default: 60)", "example": 120 },
+              "line_id": { "type": "string", "description": "Production line identifier", "example": "line_04_lithium_anode" }
+            },
+            "required": ["window_sec", "line_id"]
+          }
+        }
+      }
+    }
+  ],
+  "iam_least_privilege_policy": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "BedrockInvokeModel",
+        "Effect": "Allow",
+        "Action": [
+          "bedrock:InvokeModel",
+          "bedrock:InvokeModelWithResponseStream"
+        ],
+        "Resource": "arn:aws:bedrock:*::foundation-model/us.anthropic.claude-3-5-sonnet-20241022-v2:0"
+      },
+      {
+        "Sid": "IoTCorePublishActuation",
+        "Effect": "Allow",
+        "Action": "iot:Publish",
+        "Resource": "arn:aws:iot:*:*:topic/veripulse/plants/*/lines/*/actuation_command"
+      },
+      {
+        "Sid": "S3IncidentLedgerWrite",
+        "Effect": "Allow",
+        "Action": [
+          "s3:PutObject",
+          "s3:PutObjectTagging"
+        ],
+        "Resource": "arn:aws:s3:::veripulse-metrology-ledger/*"
+      }
+    ]
+  }
+}

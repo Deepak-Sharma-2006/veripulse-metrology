@@ -1,0 +1,111 @@
+version: "3.8"
+
+networks:
+  veripulse_net:
+    driver: bridge
+
+volumes:
+  shm_ring:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: "size=64M,uid=1000"
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. Siemens S7-1500 Cyber-Physical Simulated PLC (Modbus TCP)
+  # ----------------------------------------------------------------------------
+  plc_sim:
+    build:
+      context: .
+      dockerfile: Dockerfile.edge
+    container_name: veripulse_plc_sim
+    entrypoint: ["python3", "plc_bridge/simulated_plc_server.py", "--host", "0.0.0.0", "--port", "5020"]
+    ports:
+      - "5020:5020"
+    ipc: host
+    volumes:
+      - /dev/shm:/dev/shm
+    networks:
+      - veripulse_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c 'import socket; s = socket.socket(); s.connect((\"127.0.0.1\", 5020)); s.close()'"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ----------------------------------------------------------------------------
+  # 2. AWS Graviton3 COOL Metrology Microservice (Arm KleidiCV)
+  # ----------------------------------------------------------------------------
+  cool_metrology:
+    build:
+      context: .
+      dockerfile: Dockerfile.cool_graviton
+    container_name: veripulse_cool_metrology
+    ports:
+      - "8000:8000"
+    environment:
+      - VERIPULSE_MODE=${VERIPULSE_MODE:-DRY_RUN}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-us-east-1}
+    networks:
+      - veripulse_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8000/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ----------------------------------------------------------------------------
+  # 3. 120 FPS High-Speed Foil Streamer & G-API Reflex Perception Loop
+  # ----------------------------------------------------------------------------
+  edge_vision:
+    build:
+      context: .
+      dockerfile: Dockerfile.edge
+    container_name: veripulse_edge_vision
+    entrypoint: ["python3", "run_veripulse.py", "--mode", "${VERIPULSE_MODE:-DRY_RUN}", "--fps", "120.0", "--no-plc", "--no-cool"]
+    ipc: host
+    volumes:
+      - /dev/shm:/dev/shm
+    ports:
+      - "8765:8765"
+    environment:
+      - VERIPULSE_MODE=${VERIPULSE_MODE:-DRY_RUN}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-us-east-1}
+      - BEDROCK_MODEL_ID=${BEDROCK_MODEL_ID:-us.anthropic.claude-3-5-sonnet-20241022-v2:0}
+    depends_on:
+      plc_sim:
+        condition: service_healthy
+      cool_metrology:
+        condition: service_healthy
+    networks:
+      - veripulse_net
+    restart: unless-stopped
+
+  # ----------------------------------------------------------------------------
+  # 4. Next.js 14 WebGL Digital Twin Dashboard
+  # ----------------------------------------------------------------------------
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    container_name: veripulse_dashboard
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_WS_URL=ws://localhost:8765
+      - NEXT_PUBLIC_COOL_API_URL=http://localhost:8000
+    depends_on:
+      - edge_vision
+    networks:
+      - veripulse_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/ || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 3

@@ -1,0 +1,42 @@
+# ==============================================================================
+# VeriPulse AWS Graviton3 COOL (Cloud-Optimized OpenCV Library v3.1) Service
+# Hardware Target: AWS Graviton3 (c7g.large) / Neoverse-V1 ARM64 Architecture
+# Powered by Arm KleidiCV accelerated computer vision primitives
+# ==============================================================================
+
+FROM arm64v8/ubuntu:22.04 AS graviton_base
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH="/app"
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    python3-pip \
+    python3-dev \
+    build-essential \
+    curl \
+    ca-certificates \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Setup mock/pre-built Arm KleidiCV COOL v3.1 installation target
+RUN mkdir -p /opt/cool/lib /opt/cool/include
+
+WORKDIR /app
+
+# Install Python requirements
+COPY requirements.txt .
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+# Copy microservice source code
+COPY cloud_metrology_cool/ /app/cloud_metrology_cool/
+COPY cloud_agent/ /app/cloud_agent/
+COPY config/ /app/config/
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=5s --timeout=3s --retries=3 \
+    CMD curl -f http://127.0.0.1:8000/health || exit 1
+
+ENTRYPOINT ["uvicorn", "cloud_metrology_cool.cool_metrology_server:app", "--host", "0.0.0.0", "--port", "8000"]

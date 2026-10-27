@@ -1,0 +1,72 @@
+{
+  "pipeline_name": "VeriPulse Ultra-High-Speed Roll-to-Roll Edge Vision Pipeline",
+  "version": "1.0.0",
+  "target_hardware": {
+    "edge_platform": "x86_64 AVX-512 / AVX2 Industrial Workstation",
+    "cloud_metrology_platform": "AWS Graviton3/4 Neoverse-V2 Arm64 (COOL v3.1 / KleidiCV)"
+  },
+  "optical_camera": {
+    "sensor_model": "Sony Pregius IMX250 / Basler ace acA2040-120um",
+    "shutter_type": "Global Electronic Shutter",
+    "pixel_format": "CV_8UC1",
+    "width": 2048,
+    "height": 2048,
+    "target_fps": 120.0,
+    "frame_period_ms": 8.3333,
+    "exposure_time_us": 50.0,
+    "field_of_view_mm": {
+      "width_mm": 50.0,
+      "height_mm": 50.0
+    },
+    "spatial_resolution_um_per_pixel": 24.414,
+    "spatial_resolution_mm_per_pixel": 0.024414,
+    "optical_magnification": 0.1414,
+    "web_velocity_nominal_mps": 2.50,
+    "web_advance_per_frame_mm": 20.8333,
+    "frame_overlap_ratio": 0.5833
+  },
+  "thermal_ir_camera": {
+    "sensor_type": "Long-Wave Infrared Microbolometer (LWIR 8-14 um)",
+    "width": 512,
+    "height": 512,
+    "target_fps": 120.0,
+    "temperature_range_celsius": {
+      "min_c": 20.0,
+      "max_c": 180.0
+    },
+    "nominal_dryer_temp_c": 120.0,
+    "spatial_registration_fov_mm": {
+      "width_mm": 50.0,
+      "height_mm": 50.0
+    }
+  },
+  "gapi_calibration_defaults": {
+    "bilateral_spatial_sigma": 1.8,
+    "bilateral_range_sigma": 0.08,
+    "scharr_gradient_threshold": 45.0,
+    "specular_glare_threshold": 180.0,
+    "edge_normal_tolerance_um": 2.5
+  },
+  "defect_metrology_thresholds": {
+    "pinhole_critical_diameter_um": 50.0,
+    "pinhole_critical_pixels": 2.05,
+    "ribbing_fundamental_frequency_hz": 142.5,
+    "ribbing_harmonic_orders": [1, 2, 3],
+    "ribbing_power_db_alert_threshold": 30.0,
+    "specular_saturation_ratio_threshold": 0.80,
+    "gabor_roughness_low_threshold": 0.15
+  },
+  "shared_memory": {
+    "name": "veripulse_shm_v1",
+    "size_bytes": 5242880,
+    "header_size_bytes": 1024,
+    "optical_offset": 1024,
+    "optical_size_bytes": 4194304,
+    "thermal_offset": 4195328,
+    "thermal_size_bytes": 262144,
+    "fft_offset": 4457472,
+    "fft_size_bytes": 2048,
+    "webp_offset": 4459520,
+    "webp_max_bytes": 32768
+  }
+}
