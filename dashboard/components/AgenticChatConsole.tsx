@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Bot, Terminal, Cpu, ShieldCheck, Wrench, CheckCircle, Clock, Zap } from "lucide-react";
+import { Bot, Terminal, Cpu, ShieldCheck, Wrench, CheckCircle, Clock, Zap, ArrowRight, Activity } from "lucide-react";
 
 export interface AgentEvent {
   event_id: string;
@@ -44,222 +44,187 @@ export const AgenticChatConsole: React.FC<AgenticChatConsoleProps> = ({
   const [filterMode, setFilterMode] = useState<"all" | "reasoning" | "tools" | "plc">("all");
 
   return (
-    <div className="flex flex-col h-full bg-industrial-850 border border-industrial-700 rounded-lg overflow-hidden shadow-xl">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 bg-industrial-900 border-b border-industrial-700">
-        <div className="flex items-center space-x-2">
-          <Bot className="w-4 h-4 text-emerald-400" />
-          <span className="text-xs font-mono font-bold tracking-wider text-slate-200 uppercase">
-            Claude 3.5 Sonnet Agentic Supervisory Core
-          </span>
+    <div className="flex flex-col h-full bg-slate-900 border border-slate-800 rounded-lg overflow-hidden shadow-lg">
+      {/* Precision Industrial Header */}
+      <div className="flex items-center justify-between px-3.5 py-2.5 bg-slate-950/80 border-b border-slate-800 min-w-0">
+        <div className="flex items-center space-x-2.5 min-w-0">
+          <Bot className="w-4 h-4 text-emerald-400 shrink-0" />
+          <div className="flex items-center space-x-2 truncate">
+            <span className="text-xs font-semibold tracking-wide text-slate-100 truncate">
+              Autonomous Supervisory Controller
+            </span>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 font-medium shrink-0">
+              Claude 3.5 Sonnet
+            </span>
+          </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <span className="text-[10px] font-mono text-slate-400 hidden sm:inline">
-            us.anthropic.claude-3-5-sonnet-20241022-v2:0
-          </span>
-          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+
+        <div className="flex items-center space-x-2 shrink-0">
+          <div className="flex items-center space-x-1.5 px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/60 text-[10px] font-mono text-slate-300">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span>Active Agent</span>
+          </div>
         </div>
       </div>
 
-      {/* Filter and Trigger Ribbon */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 bg-industrial-800 border-b border-industrial-700 text-[10px] font-mono">
+      {/* Filter and Quick Trigger Ribbon */}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 bg-slate-950/50 border-b border-slate-800/80 text-[11px]">
+        {/* Filter Tabs */}
         <div className="flex items-center space-x-1">
           <button
             onClick={() => setFilterMode("all")}
-            className={`px-2 py-0.5 rounded transition ${
-              filterMode === "all" ? "bg-cyan-500 text-slate-950 font-bold" : "text-slate-400 hover:text-slate-200"
+            className={`px-2.5 py-0.5 rounded text-[11px] font-medium transition ${
+              filterMode === "all"
+                ? "bg-sky-600 text-white shadow-xs"
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
             }`}
           >
             All Logs
           </button>
           <button
             onClick={() => setFilterMode("reasoning")}
-            className={`px-2 py-0.5 rounded transition ${
-              filterMode === "reasoning" ? "bg-cyan-500 text-slate-950 font-bold" : "text-slate-400 hover:text-slate-200"
+            className={`px-2.5 py-0.5 rounded text-[11px] font-medium transition ${
+              filterMode === "reasoning"
+                ? "bg-sky-600 text-white shadow-xs"
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
             }`}
           >
             Reasoning
           </button>
           <button
             onClick={() => setFilterMode("tools")}
-            className={`px-2 py-0.5 rounded transition ${
-              filterMode === "tools" ? "bg-cyan-500 text-slate-950 font-bold" : "text-slate-400 hover:text-slate-200"
+            className={`px-2.5 py-0.5 rounded text-[11px] font-medium transition ${
+              filterMode === "tools"
+                ? "bg-sky-600 text-white shadow-xs"
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
             }`}
           >
             Tools
           </button>
           <button
             onClick={() => setFilterMode("plc")}
-            className={`px-2 py-0.5 rounded transition ${
-              filterMode === "plc" ? "bg-cyan-500 text-slate-950 font-bold" : "text-slate-400 hover:text-slate-200"
+            className={`px-2.5 py-0.5 rounded text-[11px] font-medium transition ${
+              filterMode === "plc"
+                ? "bg-sky-600 text-white shadow-xs"
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
             }`}
           >
-            PLC Actuations
+            Modbus Actions
           </button>
         </div>
 
+        {/* Quick Defect Scenario Triggers */}
         {onTriggerDefect && (
-          <div className="flex items-center space-x-1.5">
-            <span className="text-slate-400 text-[9px]">INJECT:</span>
-            <button
-              onClick={() => onTriggerDefect("surface_reflectance_anomaly")}
-              className="px-2 py-0.5 bg-industrial-700 hover:bg-industrial-600 text-amber-300 rounded border border-amber-500/30 text-[9px] transition"
-            >
-              Copper Glare
-            </button>
+          <div className="flex items-center space-x-1.5 font-mono text-[10px]">
+            <span className="text-slate-500 font-sans text-[10px] uppercase tracking-wider font-semibold">Test Scenario:</span>
             <button
               onClick={() => onTriggerDefect("slot_die_ribbing_resonance")}
-              className="px-2 py-0.5 bg-industrial-700 hover:bg-industrial-600 text-cyan-300 rounded border border-cyan-500/30 text-[9px] transition"
+              className="px-2 py-0.5 bg-amber-950/70 hover:bg-amber-900/80 text-amber-300 rounded border border-amber-800/70 transition flex items-center space-x-1 font-medium"
             >
-              142.5Hz Ribbing
+              <Zap className="w-2.5 h-2.5 text-amber-400" />
+              <span>142.5 Hz Ribbing</span>
+            </button>
+            <button
+              onClick={() => onTriggerDefect("surface_reflectance_anomaly")}
+              className="px-2 py-0.5 bg-slate-800/90 hover:bg-slate-700 text-slate-200 rounded border border-slate-700 transition font-medium"
+            >
+              Copper Glare
             </button>
           </div>
         )}
       </div>
 
       {/* Main Streaming Feed Area */}
-      <div className="flex-1 p-3 space-y-3 overflow-y-auto max-h-[380px] font-mono text-[11px]">
-        {agentEvents.length === 0 && plcUpdates.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-10 text-slate-500 space-y-2">
-            <Terminal className="w-6 h-6 text-slate-600" />
-            <span>Awaiting telemetry anomalies or tool execution events...</span>
+      <div className="flex-1 overflow-y-auto p-3 space-y-3 font-sans text-xs">
+        {agentEvents.length === 0 && plcUpdates.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-48 text-slate-500 space-y-2">
+            <Activity className="w-6 h-6 text-slate-600 animate-pulse" />
+            <p className="font-mono text-xs">Awaiting G-API Anomaly Signals...</p>
           </div>
-        )}
+        ) : (
+          agentEvents.map((evt, idx) => {
+            const isRibbing = evt.cool_metrology_verification.verdict?.includes("ribbing");
+            return (
+              <div
+                key={evt.event_id || idx}
+                className="flex flex-col p-3 rounded-lg bg-slate-950/70 border border-slate-800 shadow-sm space-y-2.5"
+              >
+                {/* Event Metadata Row */}
+                <div className="flex items-center justify-between text-[11px] font-mono border-b border-slate-800/70 pb-1.5">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sky-400 font-semibold">{evt.event_id}</span>
+                    <span className="text-slate-500">•</span>
+                    <span className="px-1.5 py-0.5 rounded bg-slate-800/80 text-slate-300 border border-slate-700/60 text-[10px]">
+                      {evt.cool_metrology_verification.engine}
+                    </span>
+                  </div>
 
-        {/* Render Agent Events */}
-        {agentEvents.map((evt, idx) => {
-          if (filterMode === "plc") return null;
-          if (filterMode === "tools" && !evt.dispatched_tool) return null;
-          if (filterMode === "reasoning" && !evt.agent_reasoning) return null;
-
-          const isRecalib = evt.dispatched_tool.includes("gapi");
-          const toolBadgeColor = isRecalib ? "text-cyan-400 border-cyan-500/40 bg-cyan-950/40" : "text-amber-400 border-amber-500/40 bg-amber-950/40";
-
-          return (
-            <div
-              key={evt.event_id || idx}
-              className="p-2.5 rounded-lg bg-industrial-900 border border-industrial-700 space-y-2 transition hover:border-slate-600"
-            >
-              {/* Event Header */}
-              <div className="flex items-center justify-between text-[10px] text-slate-400 border-b border-industrial-800 pb-1.5">
-                <div className="flex items-center space-x-1.5">
-                  <Bot className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="text-slate-200 font-bold">{evt.event_id}</span>
+                  <div className="flex items-center space-x-2 text-slate-400">
+                    <Clock className="w-3 h-3 text-slate-500" />
+                    <span className="text-emerald-400 font-semibold">{evt.closed_loop_latency_ms.toFixed(1)} ms</span>
+                    <span className="text-slate-500">(Budget ≤3.5s)</span>
+                  </div>
                 </div>
+
+                {/* COOL Verification Verdict Badge */}
                 <div className="flex items-center space-x-2">
-                  <span className="flex items-center space-x-1 text-slate-400">
-                    <Clock className="w-3 h-3" />
-                    <span>{evt.closed_loop_latency_ms.toFixed(1)} ms</span>
-                  </span>
-                  <span className="px-1.5 py-0.2 bg-emerald-950 border border-emerald-500/40 text-emerald-300 rounded text-[9px]">
-                    Single-Turn
-                  </span>
-                </div>
-              </div>
-
-              {/* COOL Metrology Microservice Verification Stamp */}
-              {evt.cool_metrology_verification && (
-                <div className="flex items-center justify-between px-2 py-1 rounded bg-industrial-800/80 border border-slate-700/60 text-[10px]">
-                  <div className="flex items-center space-x-1.5">
-                    <Cpu className="w-3 h-3 text-cyan-400" />
-                    <span className="text-slate-300">{evt.cool_metrology_verification.engine}</span>
-                  </div>
-                  <span className="text-cyan-300 font-bold uppercase text-[9px]">
-                    {evt.cool_metrology_verification.verdict}
+                  <span
+                    className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase ${
+                      isRibbing
+                        ? "bg-amber-950/80 text-amber-300 border border-amber-800/70"
+                        : "bg-sky-950/80 text-sky-300 border border-sky-800/70"
+                    }`}
+                  >
+                    VERDICT: {evt.cool_metrology_verification.verdict}
                   </span>
                 </div>
-              )}
 
-              {/* Multimodal Reasoning Trace */}
-              <div className="text-slate-300 leading-relaxed bg-industrial-850 p-2 rounded border border-industrial-800">
-                <span className="text-emerald-400 font-bold block mb-1"> Claude 3.5 Sonnet Visual Diagnosis:</span>
-                {evt.agent_reasoning}
-              </div>
-
-              {/* Dispatched Tool Call Card */}
-              {evt.dispatched_tool && (
-                <div className={`p-2 rounded border text-[10px] ${toolBadgeColor}`}>
-                  <div className="flex items-center justify-between font-bold mb-1">
-                    <div className="flex items-center space-x-1.5">
-                      <Wrench className="w-3 h-3" />
-                      <span>{evt.dispatched_tool}</span>
+                {/* Claude 3.5 Sonnet Reasoning Paragraph */}
+                {(filterMode === "all" || filterMode === "reasoning") && (
+                  <div className="text-slate-300 text-xs leading-relaxed bg-slate-900/60 p-2.5 rounded border border-slate-800/80">
+                    <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1 flex items-center space-x-1.5">
+                      <Terminal className="w-3 h-3 text-sky-400" />
+                      <span>Claude 3.5 Sonnet Metrology Diagnosis</span>
                     </div>
-                    <span className="text-[9px] uppercase px-1 rounded bg-black/40">Actuation Executed</span>
+                    <p className="font-normal text-slate-200">{evt.agent_reasoning}</p>
                   </div>
-                  <pre className="text-[9px] text-slate-300 overflow-x-auto p-1 bg-black/40 rounded mt-1">
-                    {JSON.stringify(evt.tool_parameters, null, 2)}
-                  </pre>
-                </div>
-              )}
-            </div>
-          );
-        })}
+                )}
 
-        {/* Render Authenticated PLC Updates */}
-        {plcUpdates.map((plc, idx) => {
-          if (filterMode === "reasoning" || filterMode === "tools") return null;
+                {/* Tool Execution Card */}
+                {(filterMode === "all" || filterMode === "tools") && (
+                  <div className="flex flex-col p-2.5 rounded bg-slate-900/90 border border-slate-800 font-mono text-[11px] space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-1.5 text-amber-400 font-semibold">
+                        <Wrench className="w-3.5 h-3.5" />
+                        <span>tool_call: {evt.dispatched_tool}</span>
+                      </div>
+                      <span className="px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-400 text-[9px] font-semibold">
+                        ACTUATED
+                      </span>
+                    </div>
 
-          return (
-            <div
-              key={idx}
-              className="p-2.5 rounded-lg bg-industrial-900 border border-cyan-800/60 space-y-2"
-            >
-              <div className="flex items-center justify-between text-[10px] border-b border-industrial-800 pb-1.5">
-                <div className="flex items-center space-x-1.5 text-cyan-300 font-bold">
-                  <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>PLANT PLC HOLDING REGISTERS COMMITTED</span>
-                </div>
-                <span className="text-emerald-400 text-[9px] flex items-center space-x-1">
-                  <CheckCircle className="w-3 h-3" />
-                  <span>Settled: {plc.actuator_settling_time_sec}s</span>
-                </span>
+                    <pre className="text-[10px] text-slate-300 overflow-x-auto p-2 bg-slate-950/90 rounded border border-slate-800/80 leading-snug">
+                      {JSON.stringify(evt.tool_parameters, null, 2)}
+                    </pre>
+                  </div>
+                )}
               </div>
-
-              {/* Modbus Registers Grid */}
-              <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5 text-center text-[10px]">
-                <div className="p-1 bg-industrial-800 rounded border border-industrial-700">
-                  <div className="text-[8px] text-slate-400">VELOCITY</div>
-                  <div className="text-cyan-300 font-bold">{plc.holding_registers.velocity_mms} mm/s</div>
-                </div>
-                <div className="p-1 bg-industrial-800 rounded border border-industrial-700">
-                  <div className="text-[8px] text-slate-400">TENSION</div>
-                  <div className="text-cyan-300 font-bold">{(plc.holding_registers.tension_dn / 10).toFixed(1)} N</div>
-                </div>
-                <div className="p-1 bg-industrial-800 rounded border border-industrial-700">
-                  <div className="text-[8px] text-slate-400">IR TEMP</div>
-                  <div className="text-orange-300 font-bold">{(plc.holding_registers.temp_dc / 10).toFixed(1)} °C</div>
-                </div>
-                <div className="p-1 bg-industrial-800 rounded border border-industrial-700">
-                  <div className="text-[8px] text-slate-400">PUMP RPM</div>
-                  <div className="text-cyan-300 font-bold">{(plc.holding_registers.pump_drpm / 10).toFixed(1)}</div>
-                </div>
-                <div className="p-1 bg-industrial-800 rounded border border-industrial-700">
-                  <div className="text-[8px] text-slate-400">DANCER GAIN</div>
-                  <div className="text-purple-300 font-bold">{(plc.holding_registers.dancer_dgain / 100).toFixed(2)}</div>
-                </div>
-              </div>
-
-              {/* HMAC-SHA256 Cryptographic Authentication Token */}
-              <div className="flex items-center space-x-1.5 text-[9px] text-slate-400 bg-black/40 p-1.5 rounded">
-                <span className="text-cyan-400 font-bold">HMAC-SHA256:</span>
-                <span className="truncate font-mono">{plc.hmac_sha256_signature}</span>
-                <span className="text-emerald-400 font-bold ml-auto">[VERIFIED]</span>
-              </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
 
-      {/* Footer Closed-Loop Settlement Guarantee */}
-      <div className="px-3 py-1.5 bg-industrial-900 border-t border-industrial-700 text-[10px] font-mono text-slate-400 flex items-center justify-between">
-        <span className="flex items-center space-x-1">
-          <Zap className="w-3 h-3 text-amber-400" />
-          <span>Supervisory Loop: &le; 3.5s Target SLA</span>
-        </span>
-        <span className="text-emerald-400 font-bold">Causal Safety Gate Active</span>
+      {/* Safety & SLA Footer Banner */}
+      <div className="px-3 py-2 bg-slate-950 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+        <div className="flex items-center space-x-2">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+          <span>Causal Safety Slew Gate: <strong className="text-emerald-400">Enforced (≤0.05 m/s²)</strong></span>
+        </div>
+        <div className="flex items-center space-x-2 font-mono text-[10px]">
+          <span className="text-slate-500">Supervisory SLA:</span>
+          <span className="text-slate-300 font-semibold">≤ 3.50s Settling</span>
+        </div>
       </div>
     </div>
   );
 };
-
-export default AgenticChatConsole;

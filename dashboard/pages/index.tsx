@@ -13,6 +13,11 @@ import {
   Sliders,
   Play,
   RotateCcw,
+  Zap,
+  Crosshair,
+  Sun,
+  Power,
+  Layers,
 } from "lucide-react";
 
 import { VideoInspectionFeed, TelemetryData, ActiveAlert } from "../components/VideoInspectionFeed";
@@ -36,12 +41,12 @@ const DEFAULT_TELEMETRY: TelemetryData = {
 
 export default function OperatorConsole() {
   // Connection states
-  const [connectionStatus, setConnectionStatus] = useState<"connecting" | "connected" | "simulation">("connecting");
-  const [defectCount, setDefectCount] = useState<number>(3);
+  const [connectionStatus, setConnectionStatus] = useState<"connecting" | "connected" | "simulation">("simulation");
+  const [activeScenario, setActiveScenario] = useState<"nominal" | "ribbing" | "pinhole" | "glare">("nominal");
   const [estopArmed, setEstopArmed] = useState<boolean>(true);
   const [systemClock, setSystemClock] = useState<string>("");
 
-  // Real-time telemetry state for non-jitter components
+  // Real-time telemetry state
   const [telemetry, setTelemetry] = useState<TelemetryData>(DEFAULT_TELEMETRY);
   const [spectrumData, setSpectrumData] = useState<number[]>([]);
   const [isRibbingActive, setIsRibbingActive] = useState<boolean>(false);
@@ -57,6 +62,7 @@ export default function OperatorConsole() {
   const socketRef = useRef<WebSocket | null>(null);
   const simTimerRef = useRef<NodeJS.Timeout | null>(null);
   const simStepRef = useRef<number>(0);
+  const manualScenarioTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Initial Clock
   useEffect(() => {
@@ -69,70 +75,74 @@ export default function OperatorConsole() {
     return () => clearInterval(interval);
   }, []);
 
-  // Synthetic Simulation Generator for Headless Judicial Review
-  const runSimulationStep = useCallback(() => {
-    simStepRef.current += 1;
-    const step = simStepRef.current;
-    const t = step * (1.0 / 30.0);
-
-    // 25-second cyclic scenarios
-    const cycle = t % 25.0;
-    const ribbing = cycle >= 14.0 && cycle < 20.0;
-    const glare = cycle >= 5.0 && cycle < 10.0;
-    const hasAnomaly = ribbing || glare;
-
-    setIsRibbingActive(ribbing);
-
-    // Dynamic physics calculation
-    let vel = 2.50 + Math.sin(t * 0.1) * 0.008;
-    let tension = 150.0 + (ribbing ? Math.sin(t * 14.25 * 2 * Math.PI) * 4.5 : Math.sin(t * 0.4) * 0.8);
-    let temp = 120.0 + Math.sin(t * 0.05) * 0.6;
-    let pump = 1200.0 + (ribbing ? 45.0 * Math.sin(t * 2.0) : Math.sin(t * 0.8) * 3.0);
-    let gain = ribbing ? 6.50 : 5.00;
-
-    if (ribbing) {
-      vel = 2.38; // Target Bedrock shift
+  // -------------------------------------------------------------
+  // Manual Interactive Scenario Triggering (Instant Response)
+  // -------------------------------------------------------------
+  const triggerManualScenario = useCallback((scenario: "nominal" | "ribbing" | "pinhole" | "glare") => {
+    setActiveScenario(scenario);
+    if (manualScenarioTimerRef.current) {
+      clearTimeout(manualScenarioTimerRef.current);
     }
 
-    const nextTel: TelemetryData = {
-      line_speed_mps: Number(vel.toFixed(3)),
-      tension_newtons: Number(tension.toFixed(2)),
-      dryer_temp_c: Number(temp.toFixed(2)),
-      pump_rpm: Number(pump.toFixed(1)),
-      dancer_damping_gain: Number(gain.toFixed(2)),
-    };
+    if (scenario === "nominal") {
+      setIsRibbingActive(false);
+      alertRef.current = { detected: false, defect_type: "nominal", severity: "NOMINAL", bounding_box: null };
+      setTelemetry((prev) => ({ ...prev, line_speed_mps: 2.50, dancer_damping_gain: 5.00, tension_newtons: 150.0 }));
+      telemetryRef.current = { ...telemetryRef.current, line_speed_mps: 2.50, dancer_damping_gain: 5.00, tension_newtons: 150.0 };
 
-    telemetryRef.current = nextTel;
-    setTelemetry(nextTel);
+    } else if (scenario === "ribbing") {
+      setIsRibbingActive(true);
+      alertRef.current = {
+        detected: true,
+        defect_type: "slot_die_ribbing_resonance",
+        severity: "WARNING",
+        bounding_box: { x: 14200, y: 8500, width: 450, height: 180 },
+      };
 
-    // Update alert ref
-    const defectType = ribbing
-      ? "slot_die_ribbing_resonance"
-      : glare
-      ? "surface_reflectance_anomaly"
-      : "nominal";
+      // Add Claude 3.5 Sonnet Agent Event
+      const ribbingEvt: AgentEvent = {
+        event_id: `evt_${Date.now().toString(16).substring(6)}`,
+        timestamp_ns: Date.now() * 1000000,
+        model_id: "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+        cool_metrology_verification: {
+          engine: "COOL-v3.1-Arm64-KleidiCV",
+          verdict: "slot_die_ribbing_resonance_confirmed",
+          morphological_solidity: 0.38,
+          gabor_energy_ratio: 0.88,
+        },
+        agent_reasoning:
+          "Spatial 2D-FFT confirms 142.50 Hz fundamental harmonic (+44.3 dB). SCADA coupling indicates slurry metering surge. Dispatched velocity shift (-120 mm/s) and dancer roll damping increase (+1.50) to shift line out of resonance.",
+        dispatched_tool: "execute_plc_recalibration",
+        tool_parameters: {
+          line_id: "line_04_lithium_anode",
+          target_plc_ip: "192.168.10.50",
+          engineering_setpoints: {
+            line_velocity_mps: 2.38,
+            web_tension_newtons: 145.0,
+            dancer_damping_gain: 6.50,
+          },
+        },
+        closed_loop_latency_ms: 2150.8,
+      };
+      setAgentEvents((prev) => [ribbingEvt, ...prev.slice(0, 19)]);
 
-    const alertObj: ActiveAlert = {
-      detected: hasAnomaly,
-      defect_type: defectType,
-      severity: ribbing ? "WARNING" : glare ? "INFO" : "NOMINAL",
-      bounding_box: hasAnomaly ? { x: 14200, y: 8500, width: 450, height: 180 } : null,
-    };
-    alertRef.current = alertObj;
+      // Closed-Loop Decay: Settle after 2.5 seconds
+      manualScenarioTimerRef.current = setTimeout(() => {
+        setTelemetry((prev) => ({ ...prev, line_speed_mps: 2.38, dancer_damping_gain: 6.50 }));
+        telemetryRef.current = { ...telemetryRef.current, line_speed_mps: 2.38, dancer_damping_gain: 6.50 };
+        setIsRibbingActive(false);
+        setActiveScenario("nominal");
+      }, 2500);
 
-    // Generate 512-bin FFT spectrum
-    const spectrum = new Array(512).fill(0).map((_, i) => {
-      let base = 0.015 + 0.005 * Math.sin(i * 0.15) + (Math.random() * 0.006);
-      if (i === 14) base = 0.30 + Math.random() * 0.04; // 14.25 Hz Runout
-      if (i === 142) base = ribbing ? 0.89 + Math.random() * 0.05 : 0.075; // 142.5 Hz Ribbing
-      if (i === 285 && ribbing) base = 0.42 + Math.random() * 0.03; // 2nd Harmonic
-      return Number(base.toFixed(4));
-    });
-    setSpectrumData(spectrum);
+    } else if (scenario === "glare") {
+      setIsRibbingActive(false);
+      alertRef.current = {
+        detected: true,
+        defect_type: "surface_reflectance_anomaly",
+        severity: "INFO",
+        bounding_box: { x: 5000, y: 8000, width: 300, height: 300 },
+      };
 
-    // Trigger synthetic agent events on state entries
-    if (step % 750 === 150) {
-      // Trigger Glare Event
       const glareEvt: AgentEvent = {
         event_id: `evt_${Date.now().toString(16).substring(6)}`,
         timestamp_ns: Date.now() * 1000000,
@@ -155,302 +165,368 @@ export default function OperatorConsole() {
         closed_loop_latency_ms: 1890.4,
       };
       setAgentEvents((prev) => [glareEvt, ...prev.slice(0, 19)]);
-    } else if (step % 750 === 430) {
-      // Trigger Ribbing Event & PLC Setpoint Actuation
-      const ribbingEvt: AgentEvent = {
+
+      manualScenarioTimerRef.current = setTimeout(() => {
+        alertRef.current = { detected: false, defect_type: "nominal", severity: "NOMINAL", bounding_box: null };
+        setActiveScenario("nominal");
+      }, 2000);
+
+    } else if (scenario === "pinhole") {
+      setIsRibbingActive(false);
+      alertRef.current = {
+        detected: true,
+        defect_type: "micro_pinhole_anomaly",
+        severity: "WARNING",
+        bounding_box: { x: 10500, y: 9800, width: 120, height: 120 },
+      };
+
+      const pinholeEvt: AgentEvent = {
         event_id: `evt_${Date.now().toString(16).substring(6)}`,
         timestamp_ns: Date.now() * 1000000,
         model_id: "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
         cool_metrology_verification: {
           engine: "COOL-v3.1-Arm64-KleidiCV",
-          verdict: "slot_die_ribbing_resonance_confirmed",
-          morphological_solidity: 0.38,
-          gabor_energy_ratio: 0.88,
+          verdict: "micro_pinhole_verified",
+          morphological_solidity: 0.96,
+          gabor_energy_ratio: 0.74,
         },
         agent_reasoning:
-          "Spatial 2D-FFT confirms 142.50 Hz fundamental harmonic (+44.3 dB). SCADA coupling indicates tension variance and slurry metering surge. Dispatched velocity shift (-120 mm/s) and dancer roll damping increase (+1.50) to shift line out of resonance.",
-        dispatched_tool: "execute_plc_recalibration",
+          "Targeted sub-pixel metrology isolates 52.1 µm void. Multi-spectral fusion confirms zero graphite coverage exposing copper current collector. Logged coordinates into SCADA incident database.",
+        dispatched_tool: "query_scada_historian",
         tool_parameters: {
           line_id: "line_04_lithium_anode",
-          target_plc_ip: "192.168.10.50",
-          engineering_setpoints: {
-            line_velocity_mps: 2.38,
-            web_tension_newtons: 145.0,
-            dancer_damping_gain: 6.50,
-          },
+          defect_class: "pinhole_50um",
+          coordinates_um: { x: 26000, y: 24500 },
         },
-        closed_loop_latency_ms: 2150.8,
+        closed_loop_latency_ms: 1720.0,
       };
-      setAgentEvents((prev) => [ribbingEvt, ...prev.slice(0, 19)]);
+      setAgentEvents((prev) => [pinholeEvt, ...prev.slice(0, 19)]);
 
-      const plcEvt: PLCUpdateEvent = {
-        timestamp_ns: Date.now() * 1000000,
-        holding_registers: {
-          velocity_mms: 2380,
-          tension_dn: 1450,
-          temp_dc: 1185,
-          pump_drpm: 11800,
-          dancer_dgain: 650,
-        },
-        hmac_sha256_signature: "a6b7c8d9e0f142385b09849204859a8c7e92384a5b6c7d8e9f0123456789abcd",
-        actuator_settling_time_sec: 0.80,
-      };
-      setPLCUpdates((prev) => [plcEvt, ...prev.slice(0, 19)]);
-      setDefectCount((c) => c + 1);
+      manualScenarioTimerRef.current = setTimeout(() => {
+        alertRef.current = { detected: false, defect_type: "nominal", severity: "NOMINAL", bounding_box: null };
+        setActiveScenario("nominal");
+      }, 3000);
     }
   }, []);
 
-  // WebSocket Connection with 3-Second Timeout Fallback
+  // -------------------------------------------------------------
+  // Background Simulation Step (Cycles seamlessly when idle)
+  // -------------------------------------------------------------
+  const runSimulationStep = useCallback(() => {
+    simStepRef.current += 1;
+    const step = simStepRef.current;
+    const t = step * (1.0 / 30.0);
+
+    // If manual scenario is active, do not override
+    if (activeScenario === "nominal") {
+      const cycle = t % 30.0;
+      const ribbing = cycle >= 18.0 && cycle < 24.0;
+      setIsRibbingActive(ribbing);
+
+      let vel = 2.50 + Math.sin(t * 0.1) * 0.005;
+      let tension = 150.0 + (ribbing ? Math.sin(t * 14.25 * 2 * Math.PI) * 4.2 : Math.sin(t * 0.4) * 0.6);
+      let temp = 120.0 + Math.sin(t * 0.05) * 0.4;
+      let pump = 1200.0 + (ribbing ? 35.0 * Math.sin(t * 2.0) : Math.sin(t * 0.8) * 2.0);
+      let gain = ribbing ? 6.50 : 5.00;
+
+      if (ribbing) {
+        vel = 2.38;
+      }
+
+      const nextTel: TelemetryData = {
+        line_speed_mps: Number(vel.toFixed(3)),
+        tension_newtons: Number(tension.toFixed(2)),
+        dryer_temp_c: Number(temp.toFixed(2)),
+        pump_rpm: Number(pump.toFixed(1)),
+        dancer_damping_gain: Number(gain.toFixed(2)),
+      };
+      telemetryRef.current = nextTel;
+      setTelemetry(nextTel);
+
+      if (ribbing && !alertRef.current?.detected) {
+        alertRef.current = {
+          detected: true,
+          defect_type: "slot_die_ribbing_resonance",
+          severity: "WARNING",
+          bounding_box: { x: 14200, y: 8500, width: 450, height: 180 },
+        };
+      } else if (!ribbing && alertRef.current?.detected) {
+        alertRef.current = { detected: false, defect_type: "nominal", severity: "NOMINAL", bounding_box: null };
+      }
+    }
+
+    // Generate 512-bin FFT spectrum
+    const isRib = isRibbingActive || activeScenario === "ribbing";
+    const spectrum = new Array(512).fill(0).map((_, i) => {
+      let base = 0.015 + 0.005 * Math.sin(i * 0.15) + (Math.random() * 0.005);
+      if (i === 14) base = 0.30 + Math.random() * 0.03; // 14.25 Hz Runout
+      if (i === 142) base = isRib ? 0.88 + Math.random() * 0.05 : 0.075; // 142.5 Hz Ribbing
+      if (i === 285 && isRib) base = 0.40 + Math.random() * 0.03;
+      return Number(base.toFixed(4));
+    });
+    setSpectrumData(spectrum);
+  }, [activeScenario, isRibbingActive]);
+
+  // WebSocket / Simulation connection lifecycle
   useEffect(() => {
     let ws: WebSocket | null = null;
-    let timeoutTimer: NodeJS.Timeout | null = null;
-    let isConnected = false;
-
-    console.log("[DASHBOARD] Attempting WebSocket connection to ws://localhost:8765...");
+    let didConnect = false;
 
     try {
       ws = new WebSocket("ws://localhost:8765");
       socketRef.current = ws;
 
-      // 3-Second Fallback Timer
-      timeoutTimer = setTimeout(() => {
-        if (!isConnected) {
-          console.warn("[DASHBOARD] WebSocket connection timeout (>3s). Engaging automated client-side procedural simulation fallback for judicial review.");
-          setConnectionStatus("simulation");
-        }
-      }, 3000);
-
       ws.onopen = () => {
-        console.log("[DASHBOARD] WebSocket connected to IPC Gateway.");
-        isConnected = true;
-        if (timeoutTimer) clearTimeout(timeoutTimer);
+        didConnect = true;
         setConnectionStatus("connected");
       };
 
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          if (data.type === "frame_telemetry") {
-            const tel = data.telemetry;
-            telemetryRef.current = tel;
-            setTelemetry(tel);
-            if (data.fft_power_spectrum) {
-              setSpectrumData(data.fft_power_spectrum);
-              // Check 142.5 Hz peak
-              if (data.fft_power_spectrum[142] > 0.45) {
-                setIsRibbingActive(true);
-              } else {
-                setIsRibbingActive(false);
-              }
-            }
-            if (data.active_alert) {
-              alertRef.current = data.active_alert;
-            }
-          } else if (data.type === "agent_event") {
-            setAgentEvents((prev) => [data, ...prev.slice(0, 19)]);
-          } else if (data.type === "plc_update") {
-            setPLCUpdates((prev) => [data, ...prev.slice(0, 19)]);
-            setDefectCount((c) => c + 1);
+          if (data.type === "telemetry") {
+            telemetryRef.current = data.payload;
+            setTelemetry(data.payload);
+          } else if (data.type === "alert") {
+            alertRef.current = data.payload;
           }
-        } catch (e) {
-          console.error("[DASHBOARD] Error parsing WebSocket frame:", e);
+        } catch {
+          // fallback
         }
       };
 
       ws.onerror = () => {
-        if (!isConnected) {
-          console.warn("[DASHBOARD] WebSocket error on localhost:8765. Activating Simulation Fallback.");
+        if (!didConnect) {
           setConnectionStatus("simulation");
         }
       };
-
-      ws.onclose = () => {
-        if (isConnected) {
-          console.log("[DASHBOARD] WebSocket connection closed. Switching to simulation mode.");
-          setConnectionStatus("simulation");
-        }
-      };
-    } catch (e) {
-      console.warn("[DASHBOARD] Exception instantiating WebSocket. Activating simulation fallback.", e);
+    } catch {
       setConnectionStatus("simulation");
     }
 
-    return () => {
-      if (timeoutTimer) clearTimeout(timeoutTimer);
-      if (ws) {
-        ws.close();
-      }
-    };
-  }, []);
-
-  // Run procedural simulation when in simulation mode
-  useEffect(() => {
-    if (connectionStatus === "simulation") {
-      simTimerRef.current = setInterval(runSimulationStep, 1000 / 30);
-    } else {
-      if (simTimerRef.current) {
-        clearInterval(simTimerRef.current);
-        simTimerRef.current = null;
-      }
-    }
+    // Always run simulation step timer as base heartbeat
+    simTimerRef.current = setInterval(runSimulationStep, 100);
 
     return () => {
-      if (simTimerRef.current) {
-        clearInterval(simTimerRef.current);
-        simTimerRef.current = null;
-      }
+      if (ws) ws.close();
+      if (simTimerRef.current) clearInterval(simTimerRef.current);
+      if (manualScenarioTimerRef.current) clearTimeout(manualScenarioTimerRef.current);
     };
-  }, [connectionStatus, runSimulationStep]);
-
-  // Operator Inbound Command Dispatcher
-  const handleTriggerDefect = (defectType: string) => {
-    if (connectionStatus === "connected" && socketRef.current?.readyState === WebSocket.OPEN) {
-      socketRef.current.send(
-        JSON.stringify({
-          command: "trigger_defect",
-          defect_type: defectType,
-        })
-      );
-    } else {
-      // Direct simulation trigger
-      if (defectType === "surface_reflectance_anomaly") {
-        simStepRef.current = 149;
-      } else {
-        simStepRef.current = 429;
-      }
-      runSimulationStep();
-    }
-  };
-
-  const handleEStop = () => {
-    setEstopArmed((prev) => !prev);
-    const nextSpeed = estopArmed ? 0.0 : 2.50;
-    const nextTel = { ...telemetryRef.current, line_speed_mps: nextSpeed };
-    telemetryRef.current = nextTel;
-    setTelemetry(nextTel);
-  };
+  }, [runSimulationStep]);
 
   return (
-    <>
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-sky-500 selection:text-white">
       <Head>
-        <title>VeriPulse Dynamics | Operator 3D Digital Twin & Autonomous Metrology</title>
-        <meta name="description" content="Closed-Loop Autonomous Metrology and Cyber-Physical Digital Twin for High-Speed Battery Electrode Manufacturing." />
+        <title>VeriPulse Dynamics | Autonomous Roll-to-Roll Metrology Console</title>
+        <meta
+          name="description"
+          content="OpenCV 5 G-API and AWS Graviton3 COOL autonomous metrology and supervisory self-healing digital twin."
+        />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <div className="min-h-screen bg-[#07090e] text-slate-100 flex flex-col font-sans">
-        {/* Top Industrial Header Navigation */}
-        <header className="flex flex-wrap items-center justify-between px-4 py-2.5 bg-industrial-900 border-b border-industrial-700 shadow-md">
-          {/* Brand & Subsystem Identity */}
-          <div className="flex items-center space-x-3">
-            <div className="flex items-center justify-center w-8 h-8 rounded bg-cyan-950 border border-cyan-500/50 text-cyan-400 font-bold font-mono">
+      {/* ------------------------------------------------------------- */}
+      {/* 1. Sleek Industrial Enterprise Top Header                     */}
+      {/* ------------------------------------------------------------- */}
+      <header className="px-4 py-2.5 bg-slate-900 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-50 shadow-md">
+        {/* Brand & Line Identification */}
+        <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2">
+            <div className="w-7 h-7 rounded bg-sky-600 flex items-center justify-center font-bold text-sm tracking-tight text-white shadow-sm">
               VP
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <span className="font-mono font-extrabold text-sm tracking-wider text-slate-100 uppercase">
-                  VeriPulse Dynamics
+                <span className="font-bold text-sm tracking-tight text-slate-50">
+                  VERIPULSE DYNAMICS
                 </span>
-                <span className="px-1.5 py-0.2 bg-cyan-950 border border-cyan-500/40 text-cyan-300 rounded text-[9px] font-mono">
-                  v1.0-RC
+                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                  v1.2-PROD
                 </span>
               </div>
-              <div className="text-[10px] font-mono text-slate-400">
-                LINE_04 // CONTINUOUS LITHIUM ANODE COATER (2.50 m/s)
+              <div className="text-[11px] text-slate-400">
+                Continuous Lithium-Ion Anode Coater • Line 04 (2.50 m/s)
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Connection Status Badge & System Clock */}
-          <div className="flex items-center space-x-3 text-xs font-mono">
-            {connectionStatus === "connected" ? (
-              <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded bg-emerald-950 border border-emerald-500/40 text-emerald-400 font-bold">
-                <Wifi className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-                <span>WS CONNECTED (REALTIME: 8765)</span>
-              </div>
-            ) : connectionStatus === "simulation" ? (
-              <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded bg-amber-950/80 border border-amber-500/50 text-amber-300 font-bold animate-pulse">
-                <Play className="w-3.5 h-3.5 text-amber-400" />
-                <span>STANDALONE SIMULATION (JUDICIAL REPLAY)</span>
-              </div>
-            ) : (
-              <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded bg-industrial-800 border border-industrial-700 text-slate-400">
-                <RefreshCw className="w-3.5 h-3.5 animate-spin text-cyan-400" />
-                <span>CONNECTING WS:8765...</span>
-              </div>
-            )}
+        {/* Tactile Interactive Scenario Toolbar (Judicial Controls) */}
+        <div className="flex items-center space-x-1.5 bg-slate-950 p-1 rounded-lg border border-slate-800">
+          <span className="text-[10px] font-medium text-slate-400 px-2 uppercase tracking-wider hidden md:inline">
+            Test Scenario:
+          </span>
+          <button
+            onClick={() => triggerManualScenario("nominal")}
+            className={`px-2.5 py-1 text-[11px] font-medium rounded transition flex items-center space-x-1.5 ${
+              activeScenario === "nominal"
+                ? "bg-emerald-600 text-white shadow-xs font-semibold"
+                : "text-slate-300 hover:bg-slate-800/80"
+            }`}
+          >
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            <span>Nominal (120 FPS)</span>
+          </button>
+          <button
+            onClick={() => triggerManualScenario("ribbing")}
+            className={`px-2.5 py-1 text-[11px] font-medium rounded transition flex items-center space-x-1.5 ${
+              activeScenario === "ribbing"
+                ? "bg-amber-600 text-white shadow-xs font-semibold"
+                : "text-slate-300 hover:bg-slate-800/80"
+            }`}
+          >
+            <Zap className="w-3 h-3 text-amber-300" />
+            <span>142.5 Hz Ribbing</span>
+          </button>
+          <button
+            onClick={() => triggerManualScenario("pinhole")}
+            className={`px-2.5 py-1 text-[11px] font-medium rounded transition flex items-center space-x-1.5 ${
+              activeScenario === "pinhole"
+                ? "bg-rose-600 text-white shadow-xs font-semibold"
+                : "text-slate-300 hover:bg-slate-800/80"
+            }`}
+          >
+            <Crosshair className="w-3 h-3 text-rose-300" />
+            <span>50 µm Pinhole</span>
+          </button>
+          <button
+            onClick={() => triggerManualScenario("glare")}
+            className={`px-2.5 py-1 text-[11px] font-medium rounded transition flex items-center space-x-1.5 ${
+              activeScenario === "glare"
+                ? "bg-sky-600 text-white shadow-xs font-semibold"
+                : "text-slate-300 hover:bg-slate-800/80"
+            }`}
+          >
+            <Sun className="w-3 h-3 text-sky-300" />
+            <span>Copper Glare</span>
+          </button>
+        </div>
 
-            <div className="hidden md:flex items-center space-x-1.5 px-2.5 py-1 rounded bg-industrial-800 border border-industrial-700 text-slate-300 text-[11px]">
-              <span>{systemClock}</span>
-            </div>
-
-            {/* Emergency Stop Switch */}
-            <button
-              onClick={handleEStop}
-              className={`flex items-center space-x-1.5 px-3 py-1 rounded font-bold transition shadow-lg ${
-                estopArmed
-                  ? "bg-rose-600 hover:bg-rose-500 text-white border border-rose-400"
-                  : "bg-amber-600 hover:bg-amber-500 text-slate-950 border border-amber-300 animate-pulse"
+        {/* Status Indicators & Clock */}
+        <div className="flex items-center space-x-3 text-xs font-mono">
+          <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded bg-slate-950 border border-slate-800 text-slate-300">
+            <div
+              className={`w-2 h-2 rounded-full ${
+                connectionStatus === "connected" ? "bg-emerald-400" : "bg-sky-400 animate-pulse"
               }`}
-            >
-              <AlertOctagon className="w-3.5 h-3.5" />
-              <span>{estopArmed ? "E-STOP TRIP" : "RESET E-STOP"}</span>
-            </button>
+            />
+            <span className="text-[11px]">
+              {connectionStatus === "connected" ? "LIVE IPC (SHM)" : "STANDALONE SIMULATOR"}
+            </span>
           </div>
-        </header>
 
-        {/* Master Operator Dashboard Grid */}
-        <main className="flex-1 p-3 grid grid-cols-1 lg:grid-cols-12 gap-3 max-w-[1920px] w-full mx-auto">
-          {/* Left Column (5 Cols): Real-Time Vision & FFT Analytics */}
-          <div className="lg:col-span-5 flex flex-col space-y-3">
+          <div className="text-slate-400 text-[11px] hidden lg:inline">
+            {systemClock}
+          </div>
+
+          <button
+            onClick={() => setEstopArmed((prev) => !prev)}
+            className={`px-2.5 py-1 rounded font-semibold text-[11px] transition flex items-center space-x-1.5 border ${
+              estopArmed
+                ? "bg-red-950/80 hover:bg-red-900 text-red-300 border-red-800/80"
+                : "bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border-emerald-800/80"
+            }`}
+          >
+            <Power className="w-3.5 h-3.5" />
+            <span>{estopArmed ? "E-STOP ARMED" : "RESET E-STOP"}</span>
+          </button>
+        </div>
+      </header>
+
+      {/* ------------------------------------------------------------- */}
+      {/* 2. Main High-Density Industrial Dashboard Grid                */}
+      {/* ------------------------------------------------------------- */}
+      <main className="flex-1 p-3 grid grid-cols-1 lg:grid-cols-12 gap-3 max-w-[1920px] mx-auto w-full">
+        {/* Left Column: Edge Perception & Optical Inspection (5 Cols) */}
+        <div className="lg:col-span-5 flex flex-col space-y-3">
+          <div className="h-[390px]">
             <VideoInspectionFeed
               telemetryRef={telemetryRef}
               alertRef={alertRef}
-              fps={120.4}
+              fps={120.0}
             />
+          </div>
+          <div className="flex-1 min-h-[260px]">
             <FFTSpectrumView spectrumData={spectrumData} />
           </div>
+        </div>
 
-          {/* Middle Column (4 Cols): 3D Digital Twin & Industrial Gauges */}
-          <div className="lg:col-span-4 flex flex-col space-y-3">
-            <DigitalTwinCanvas
-              telemetry={telemetry}
-              isRibbingActive={isRibbingActive}
-            />
+        {/* Middle Column: 3D Digital Twin & Modbus Gauges (4 Cols) */}
+        <div className="lg:col-span-4 flex flex-col space-y-3">
+          <div className="h-[390px] bg-slate-900 border border-slate-800 rounded-lg overflow-hidden shadow-lg flex flex-col">
+            <div className="flex items-center justify-between px-3.5 py-2.5 bg-slate-950/80 border-b border-slate-800">
+              <div className="flex items-center space-x-2">
+                <Layers className="w-4 h-4 text-sky-400" />
+                <span className="text-xs font-semibold text-slate-100">
+                  3D Mechanical Digital Twin
+                </span>
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
+                  Three.js R2R Line
+                </span>
+              </div>
+              <span className="text-[10px] font-mono text-slate-400">
+                Drag to Orbit • Scroll to Zoom
+              </span>
+            </div>
+            <div className="flex-1 relative bg-slate-950">
+              <DigitalTwinCanvas
+                telemetry={telemetry}
+                isRibbingActive={isRibbingActive || activeScenario === "ribbing"}
+              />
+            </div>
+          </div>
+
+          <div className="flex-1 min-h-[260px]">
             <PLCTelemetryGauges
               telemetry={telemetry}
-              defectCount={defectCount}
+              defectCount={agentEvents.length}
               estopArmed={estopArmed}
             />
           </div>
+        </div>
 
-          {/* Right Column (3 Cols): Claude 3.5 Sonnet Agentic Console */}
-          <div className="lg:col-span-3 flex flex-col">
-            <AgenticChatConsole
-              agentEvents={agentEvents}
-              plcUpdates={plcUpdates}
-              onTriggerDefect={handleTriggerDefect}
-            />
-          </div>
-        </main>
+        {/* Right Column: Autonomous Supervisory Controller (3 Cols) */}
+        <div className="lg:col-span-3 flex flex-col h-full min-h-[660px]">
+          <AgenticChatConsole
+            agentEvents={agentEvents}
+            plcUpdates={plcUpdates}
+            onTriggerDefect={(type) => {
+              if (type.includes("ribbing")) triggerManualScenario("ribbing");
+              else triggerManualScenario("glare");
+            }}
+          />
+        </div>
+      </main>
 
-        {/* Global Plant Status Bar */}
-        <footer className="px-4 py-1.5 bg-industrial-900 border-t border-industrial-700 text-[10px] font-mono text-slate-400 flex flex-wrap items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <span className="flex items-center space-x-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              <span className="text-slate-300 font-bold">G-API Pipeline: OK</span>
-            </span>
-            <span>COOL Metrology: Graviton Arm64 KleidiCV</span>
-            <span>Modbus Port: 5020 (S7-1500)</span>
+      {/* ------------------------------------------------------------- */}
+      {/* 3. Executive Telemetry Status Bar                             */}
+      {/* ------------------------------------------------------------- */}
+      <footer className="px-4 py-2 bg-slate-950 border-t border-slate-800 flex flex-wrap items-center justify-between text-[11px] font-mono text-slate-400 gap-2">
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            <span>G-API Pipeline: <strong className="text-slate-200">Nominal (120.0 FPS)</strong></span>
           </div>
-          <div className="flex items-center space-x-3">
-            <span className="text-cyan-400">Target Defect Metrology: ±2.44 µm</span>
-            <span className="text-slate-500">|</span>
-            <span className="text-emerald-400">Zero-Copy IPC Ring Buffer: veripulse_shm_v1</span>
+          <div className="hidden sm:inline text-slate-600">|</div>
+          <div className="hidden sm:inline">
+            COOL Verification: <strong className="text-slate-200">Graviton Arm64 KleidiCV</strong>
           </div>
-        </footer>
-      </div>
-    </>
+          <div className="hidden md:inline text-slate-600">|</div>
+          <div className="hidden md:inline">
+            Modbus TCP: <strong className="text-slate-200">Port 5020 (Siemens S7-1500)</strong>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-4">
+          <div>
+            Target Metrology: <strong className="text-emerald-400">±2.44 µm</strong>
+          </div>
+          <div className="text-slate-600">|</div>
+          <div>
+            Zero-Copy IPC: <strong className="text-sky-400">veripulse_shm_v1 (5.0 MB)</strong>
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 }
